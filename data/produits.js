@@ -64,7 +64,7 @@ window.PRODUITS = [
     "nom": "private gold",
     "categorie": "Parfums",
     "prix": 6500,
-    "taille": "35ml",
+    "taille": "60ml",
     "description": "",
     "disponible": true,
     "image": "images/pmwgam2vm.jpg"
