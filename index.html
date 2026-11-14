@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Maison Diagne Senteur – L'Excellence du Parfum – Thiès, Médina Fall">
+<title>Maison Diagne Senteur</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <img src="logo/logo.png" alt="Logo" onerror="this.style.display='none'">
+    <div><h1 id="nom"></h1><p id="slogan"></p></div>
+  </div>
+  <button id="btnPanier" class="panier" aria-label="Voir le panier">🛒 <span id="nbPanier">0</span></button>
+</header>
+
+<section class="hero">
+  <img class="hero-logo" src="logo/logo.png" alt="Maison Diagne Senteur – L'Excellence du Parfum">
+  <div class="hero-txt">
+    <h2>Découvrez nos parfums</h2>
+    <p>Parfums, cosmétiques et accessoires · Commande en un clic sur WhatsApp</p>
+    <a href="#grille" class="hero-btn">Voir le catalogue</a>
+  </div>
+</section>
+
+<main>
+  <div class="barre">
+    <input id="recherche" type="search" placeholder="Rechercher un parfum…">
+    <div id="categories" class="cats"></div>
+  </div>
+  <section id="grille" class="grille"></section>
+  <p id="vide" class="vide" hidden>Aucun produit trouvé.</p>
+</main>
+
+<footer>
+  <p id="adresse"></p>
+  <p>WhatsApp : <strong id="tel"></strong></p>
+  <p><a href="admin.html" class="discret">admin</a></p>
+</footer>
+
+<aside id="panneau" class="panneau" hidden>
+  <div class="panneau-in">
+    <div class="ph"><h2>Mon panier</h2><button id="fermer" aria-label="Fermer">✕</button></div>
+    <div id="lignes"></div>
+    <div class="total"><span>Total</span><strong id="total">0 FCFA</strong></div>
+    <form id="commande">
+      <input name="prenom" placeholder="Prénom" required>
+      <input name="nom" placeholder="Nom" required>
+      <textarea name="adresse" placeholder="Adresse de livraison" required></textarea>
+      <input name="tel" type="tel" placeholder="Numéro de téléphone" required>
+      <button type="submit" class="btn-wa">Envoyer la commande sur WhatsApp</button>
+    </form>
+  </div>
+</aside>
+
+<script src="config.js"></script>
+<script src="data/produits.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = n => Number(n).toLocaleString('fr-FR') + ' FCFA';
+const estDispo = p => p.disponible !== false;
+let cat = 'Tous';
+let panier = {};
+
+$('#nom').textContent = CONFIG.nomBoutique;
+$('#slogan').textContent = CONFIG.slogan;
+$('#adresse').textContent = CONFIG.adresse;
+$('#tel').textContent = CONFIG.telephone;
+document.title = CONFIG.nomBoutique;
+
+function renderCats() {
+  const c = ['Tous', ...new Set(PRODUITS.map(p => p.categorie).filter(Boolean))];
+  $('#categories').innerHTML = c.map(x => `<button class="cat ${x === cat ? 'on' : ''}" data-c="${esc(x)}">${esc(x)}</button>`).join('');
+}
+
+function renderGrille() {
+  const q = $('#recherche').value.trim().toLowerCase();
+  const l = PRODUITS.filter(p =>
+    (cat === 'Tous' || p.categorie === cat) &&
+    (!q || (p.nom + ' ' + (p.description || '')).toLowerCase().includes(q)));
+  $('#grille').innerHTML = l.map(p => {
+    const ok = estDispo(p);
+    return `
+    <article class="carte ${ok ? '' : 'indispo'}">
+      <div class="img">${p.image ? `<img loading="lazy" src="${esc(p.image)}" alt="${esc(p.nom)}">` : '🧴'}
+        <span class="badge ${ok ? 'b-ok' : 'b-ko'}">${ok ? '● Disponible' : '● Indisponible'}</span>
+      </div>
+      <div class="info">
+        <h3>${esc(p.nom)}</h3>
+        <p class="meta">${esc(p.taille || '')}</p>
+        <p class="desc">${esc(p.description || '')}</p>
+        <div class="bas"><strong>${fmt(p.prix)}</strong>
+          <button class="cmd ${ok ? 'vert' : 'gris'}" data-id="${esc(p.id)}" ${ok ? '' : 'disabled'}>${ok ? 'Commander' : 'Indisponible'}</button>
+        </div>
+      </div>
+    </article>`;
+  }).join('');
+  $('#vide').hidden = l.length > 0;
+}
+
+function totalPanier() {
+  return idsPanier().reduce((s, id) => s + produit(id).prix * panier[id], 0);
+}
+function produit(id) { return PRODUITS.find(x => x.id === id); }
+function idsPanier() {
+  return Object.keys(panier).filter(id => produit(id) && estDispo(produit(id)));
+}
+
+function renderPanier() {
+  const ids = idsPanier();
+  $('#nbPanier').textContent = ids.reduce((s, id) => s + panier[id], 0);
+  $('#lignes').innerHTML = ids.length ? ids.map(id => {
+    const p = produit(id);
+    return `<div class="ligne"><div><b>${esc(p.nom)}</b><br><small>${fmt(p.prix)}</small></div>
+      <div class="qte"><button data-m="-" data-id="${esc(id)}">−</button>${panier[id]}<button data-m="+" data-id="${esc(id)}">+</button></div></div>`;
+  }).join('') : '<p>Votre panier est vide.</p>';
+  $('#total').textContent = fmt(totalPanier());
+}
+
+document.addEventListener('click', e => {
+  const t = e.target;
+  if (t.classList.contains('cat')) { cat = t.dataset.c; renderCats(); renderGrille(); }
+  else if (t.classList.contains('cmd') && !t.disabled) {
+    panier[t.dataset.id] = (panier[t.dataset.id] || 0) + 1;
+    renderPanier();
+    t.textContent = 'Ajouté ✓';
+    setTimeout(() => { t.textContent = 'Commander'; }, 900);
+  }
+  else if (t.dataset.m) {
+    const id = t.dataset.id;
+    panier[id] = (panier[id] || 0) + (t.dataset.m === '+' ? 1 : -1);
+    if (panier[id] <= 0) delete panier[id];
+    renderPanier();
+  }
+});
+
+$('#recherche').addEventListener('input', renderGrille);
+$('#btnPanier').onclick = () => { renderPanier(); $('#panneau').hidden = false; };
+$('#fermer').onclick = () => $('#panneau').hidden = true;
+$('#panneau').onclick = e => { if (e.target.id === 'panneau') $('#panneau').hidden = true; };
+
+$('#commande').onsubmit = e => {
+  e.preventDefault();
+  const ids = idsPanier();
+  if (!ids.length) return alert('Votre panier est vide.');
+  const f = new FormData(e.target);
+  const lignes = ids.map(id => {
+    const p = produit(id);
+    return `- ${p.nom} x${panier[id]} = ${fmt(p.prix * panier[id])}`;
+  }).join('\n');
+  const msg =
+`Bonjour ${CONFIG.nomBoutique}, je souhaite passer commande :
+${lignes}
+
+Total : ${fmt(totalPanier())}
+
+Prénom : ${f.get('prenom')}
+Nom : ${f.get('nom')}
+Téléphone : ${f.get('tel')}
+Adresse de livraison : ${f.get('adresse')}`;
+  window.open(`https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent(msg)}`, '_blank');
+};
+
+renderCats();
+renderGrille();
+</script>
+</body>
+</html>

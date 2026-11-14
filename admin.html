@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Admin – Maison Diagne Senteur</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="admin">
+
+<div id="login" class="login">
+  <h2>Espace admin</h2>
+  <input id="pwd" type="password" placeholder="Mot de passe">
+  <button id="entrer" class="btn">Entrer</button>
+  <p id="erreur" class="err"></p>
+</div>
+
+<div id="app" hidden>
+  <header class="top">
+    <h1>Gestion des produits</h1>
+    <span id="etat" class="etat"></span>
+  </header>
+  <main class="adm">
+    <div>
+      <form id="form" class="fiche">
+        <input name="nom" placeholder="Nom du produit" required>
+        <div class="row">
+          <input name="categorie" list="cats" placeholder="Catégorie">
+          <input name="prix" type="number" min="0" placeholder="Prix (FCFA)" required>
+        </div>
+        <datalist id="cats"></datalist>
+        <input name="taille" placeholder="Taille (ex : 100 ml)">
+        <textarea name="description" placeholder="Description"></textarea>
+        <label class="chk"><input type="checkbox" name="disponible" checked> Disponible</label>
+        <label class="photo">Photo du produit <input type="file" id="photo" accept="image/*"></label>
+        <img id="apercu" class="apercu" alt="" hidden>
+        <div class="row">
+          <button class="btn" type="submit" id="enregistrer">Ajouter le produit</button>
+          <button class="sec" type="button" id="annuler">Annuler</button>
+        </div>
+      </form>
+    </div>
+    <div>
+      <div class="barre-pub"><button id="publier" class="btn-or">Publier sur le site</button></div>
+      <div id="liste" class="liste"></div>
+    </div>
+  </main>
+</div>
+
+<script src="config.js"></script>
+<script src="data/produits.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = n => Number(n).toLocaleString('fr-FR') + ' FCFA';
+
+let liste = structuredClone(PRODUITS); // copie de travail
+let photos = {};        // id -> { url, b64 } photos à envoyer sur GitHub
+let pendingPhoto = null; // photo choisie pour le produit en cours
+let editId = null;
+let dirty = false;
+let aSupprimer = [];     // images à retirer du dépôt (produits déjà publiés supprimés)
+
+// Connexion
+$('#entrer').onclick = () => {
+  if ($('#pwd').value === CONFIG.adminPassword) {
+    $('#login').hidden = true; $('#app').hidden = false; rendre();
+  } else $('#erreur').textContent = 'Mot de passe incorrect';
+};
+$('#pwd').onkeydown = e => { if (e.key === 'Enter') $('#entrer').click(); };
+
+function rendre() {
+  const cats = [...new Set(liste.map(p => p.categorie).filter(Boolean))];
+  $('#cats').innerHTML = cats.map(c => `<option value="${esc(c)}">`).join('');
+  $('#liste').innerHTML = liste.map(p => {
+    const src = photos[p.id]?.url || p.image || '';
+    return `<div class="item ${p.disponible === false ? 'off' : ''}">
+      <img src="${esc(src)}" alt="" onerror="this.style.visibility='hidden'">
+      <div class="t"><b>${esc(p.nom)}</b>
+        <small>${esc(p.categorie || '')} · ${fmt(p.prix)} ${esc(p.taille ? '· ' + p.taille : '')}</small>
+        <small class="${p.disponible === false ? 'st-ko' : 'st-ok'}">● ${p.disponible === false ? 'Indisponible' : 'Disponible'}</small></div>
+      <div><button data-e="${esc(p.id)}">Modifier</button><br><button class="sup" data-s="${esc(p.id)}">Supprimer</button></div>
+    </div>`;
+  }).join('') || '<p>Aucun produit.</p>';
+  $('#etat').textContent = dirty ? 'Modifications non publiées' : `${liste.length} produit(s)`;
+}
+
+function reset() {
+  $('#form').reset();
+  $('#apercu').hidden = true;
+  editId = null; pendingPhoto = null;
+  $('#enregistrer').textContent = 'Ajouter le produit';
+}
+
+// Compression de la photo (JPEG léger, fond blanc)
+function compresser(file) {
+  return new Promise((ok, ko) => {
+    const img = new Image();
+    img.onload = () => {
+      const r = Math.min(1, 800 / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * r); c.height = Math.round(img.height * r);
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+      ctx.drawImage(img, 0, 0, c.width, c.height);
+      ok(c.toDataURL('image/jpeg', 0.82));
+    };
+    img.onerror = ko;
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+$('#photo').onchange = async e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  pendingPhoto = await compresser(file);
+  $('#apercu').src = pendingPhoto;
+  $('#apercu').hidden = false;
+};
+
+// Modifier / supprimer
+$('#liste').onclick = e => {
+  const id = e.target.dataset.e, sid = e.target.dataset.s;
+  if (id) {
+    const p = liste.find(x => x.id === id);
+    const f = $('#form');
+    editId = id;
+    f.nom.value = p.nom; f.categorie.value = p.categorie || '';
+    f.prix.value = p.prix; f.taille.value = p.taille || ''; f.description.value = p.description || '';
+    f.disponible.checked = p.disponible !== false;
+    const url = photos[id]?.url || p.image;
+    $('#apercu').src = url || ''; $('#apercu').hidden = !url;
+    $('#enregistrer').textContent = 'Enregistrer les modifications';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  if (sid && confirm('Supprimer ce produit ?')) {
+    if (PRODUITS.some(p => p.id === sid && p.image)) aSupprimer.push(PRODUITS.find(p => p.id === sid).image);
+    liste = liste.filter(p => p.id !== sid);
+    delete photos[sid];
+    if (editId === sid) reset();
+    dirty = true; rendre();
+  }
+};
+
+$('#annuler').onclick = reset;
+
+// Enregistrer (ajout ou modification)
+$('#form').onsubmit = e => {
+  e.preventDefault();
+  const f = e.target;
+  const data = {
+    nom: f.nom.value.trim(),
+    categorie: f.categorie.value.trim(),
+    prix: Number(f.prix.value),
+    taille: f.taille.value.trim(),
+    description: f.description.value.trim(),
+    disponible: f.disponible.checked
+  };
+  const id = editId || 'p' + Date.now().toString(36);
+  if (editId) Object.assign(liste.find(x => x.id === editId), data);
+  else liste.push({ id, ...data, image: '' });
+
+  if (pendingPhoto) {
+    photos[id] = { url: pendingPhoto, b64: pendingPhoto.split(',')[1] };
+    liste.find(x => x.id === id).image = `images/${id}.jpg`;
+    pendingPhoto = null;
+  }
+  dirty = true;
+  reset();
+  rendre();
+};
+
+// Publication sur GitHub : UN seul commit (photos + catalogue) via l'API Git.
+// Plus rapide, plus fiable, et tout passe ou rien ne passe.
+const GH = {
+  async req(token, method, path, body) {
+    const url = `https://api.github.com/repos/${CONFIG.github.owner}/${CONFIG.github.repo}${path}`;
+    const r = await fetch(url, {
+      method,
+      headers: {
+        Authorization: 'Bearer ' + token,
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+        'Content-Type': 'application/json'
+      },
+      body: body ? JSON.stringify(body) : undefined
+    });
+    if (!r.ok) {
+      const d = await r.json().catch(() => ({}));
+      const e = new Error(d.message || r.statusText);
+      e.status = r.status;
+      throw e;
+    }
+    return r.status === 204 ? null : r.json();
+  }
+};
+
+function messageErreur(e) {
+  const messages = {
+    401: 'jeton invalide ou expiré. Créez un nouveau jeton GitHub.',
+    403: "jeton sans droit d'écriture. Il faut « Contents : Read and write » sur le dépôt « boutique ».",
+    404: 'dépôt ou branche introuvable. Vérifiez owner, repo et branch dans config.js.',
+    409: 'conflit détecté. Réessayez la publication.',
+    422: 'GitHub a refusé les données envoyées. Réessayez.'
+  };
+  return messages[e.status] || e.message;
+}
+
+$('#publier').onclick = async () => {
+  let token = localStorage.getItem('gh_token') || '';
+  if (!token) {
+    token = (prompt('Jeton GitHub (accès en écriture au dépôt « boutique ») :') || '').trim();
+    if (!token) return;
+    localStorage.setItem('gh_token', token);
+  }
+  const { branch } = CONFIG.github;
+  const b = $('#publier');
+  b.disabled = true; b.textContent = 'Publication en cours…';
+
+  try {
+    // 1. Dernier commit de la branche et son arbre
+    const ref = await GH.req(token, 'GET', `/git/ref/heads/${branch}`);
+    const dernierCommit = ref.object.sha;
+    const commit = await GH.req(token, 'GET', `/git/commits/${dernierCommit}`);
+
+    // 2. Préparer les fichiers : photos (blobs), suppressions, catalogue
+    const entrees = [];
+    for (const id in photos) {
+      const blob = await GH.req(token, 'POST', '/git/blobs', { content: photos[id].b64, encoding: 'base64' });
+      entrees.push({ path: `images/${id}.jpg`, mode: '100644', type: 'blob', sha: blob.sha });
+    }
+    for (const path of aSupprimer) {
+      entrees.push({ path, mode: '100644', type: 'blob', sha: null });
+    }
+    entrees.push({
+      path: 'data/produits.js',
+      mode: '100644',
+      type: 'blob',
+      content: `window.PRODUITS = ${JSON.stringify(liste, null, 2)};\n`
+    });
+
+    // 3. Un arbre, un commit, puis mise à jour de la branche
+    const arbre = await GH.req(token, 'POST', '/git/trees', { base_tree: commit.tree.sha, tree: entrees });
+    const nouveau = await GH.req(token, 'POST', '/git/commits', {
+      message: `Mise à jour du catalogue (${liste.length} produit(s))`,
+      tree: arbre.sha,
+      parents: [dernierCommit]
+    });
+    await GH.req(token, 'PATCH', `/git/refs/heads/${branch}`, { sha: nouveau.sha, force: false });
+
+    photos = {}; aSupprimer = []; dirty = false; rendre();
+    alert('Site mis à jour ! Patientez 1 à 2 minutes, puis actualisez la boutique (Ctrl+F5 sur ordinateur).');
+  } catch (err) {
+    if (err.status === 401) localStorage.removeItem('gh_token');
+    alert('Échec de la publication : ' + messageErreur(err));
+  } finally {
+    b.disabled = false; b.textContent = 'Publier sur le site';
+  }
+};
+
+window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+</script>
+</body>
+</html>
