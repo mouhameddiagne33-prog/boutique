@@ -118,5 +118,15 @@ window.PRODUITS = [
     "description": "",
     "disponible": true,
     "image": "images/pmwgbxjpk.jpg"
+  },
+  {
+    "id": "pmwgc2yz8",
+    "nom": "liquid brun",
+    "categorie": "Parfums",
+    "prix": 20000,
+    "taille": "100ml",
+    "description": "",
+    "disponible": true,
+    "image": "images/pmwgc2yz8.jpg"
   }
 ];
