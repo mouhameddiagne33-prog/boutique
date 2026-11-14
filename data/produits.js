@@ -1,13 +1,13 @@
 window.PRODUITS = [
   {
     "id": "vanilla-voyage",
-    "nom": "Vanilla Voyage",
+    "nom": "intense wayfarer",
     "categorie": "Parfums",
-    "prix": 25000,
-    "taille": "",
-    "description": "Un parfum gourmand à la vanille, chaleureux et élégant.",
+    "prix": 13000,
+    "taille": "100ml",
+    "description": "",
     "disponible": true,
-    "image": ""
+    "image": "images/vanilla-voyage.jpg"
   },
   {
     "id": "pmwgacpdx",
@@ -18,5 +18,15 @@ window.PRODUITS = [
     "description": "",
     "disponible": true,
     "image": "images/pmwgacpdx.jpg"
+  },
+  {
+    "id": "pmwgagr9n",
+    "nom": "moussouf marron",
+    "categorie": "Parfums",
+    "prix": 10000,
+    "taille": "100ml",
+    "description": "",
+    "disponible": true,
+    "image": "images/pmwgagr9n.jpg"
   }
 ];
