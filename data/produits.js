@@ -10,13 +10,13 @@ window.PRODUITS = [
     "image": ""
   },
   {
-    "id": "pmwgaapf9",
+    "id": "pmwgacpdx",
     "nom": "rifahat adorn",
-    "categorie": "",
+    "categorie": "Parfums",
     "prix": 13000,
     "taille": "100ml",
     "description": "",
     "disponible": true,
-    "image": "images/pmwgaapf9.jpg"
+    "image": "images/pmwgacpdx.jpg"
   }
 ];
