@@ -28,5 +28,45 @@ window.PRODUITS = [
     "description": "",
     "disponible": true,
     "image": "images/pmwgagr9n.jpg"
+  },
+  {
+    "id": "pmwgahna5",
+    "nom": "rifahat blanc",
+    "categorie": "Parfums",
+    "prix": 13000,
+    "taille": "100ml",
+    "description": "",
+    "disponible": true,
+    "image": "images/pmwgahna5.jpg"
+  },
+  {
+    "id": "pmwgaimtn",
+    "nom": "madawi oud al malick",
+    "categorie": "Parfums",
+    "prix": 16000,
+    "taille": "50ml",
+    "description": "",
+    "disponible": true,
+    "image": "images/pmwgaimtn.jpg"
+  },
+  {
+    "id": "pmwgajaf2",
+    "nom": "moussouf wardi",
+    "categorie": "",
+    "prix": 10000,
+    "taille": "100ml",
+    "description": "",
+    "disponible": true,
+    "image": "images/pmwgajaf2.jpg"
+  },
+  {
+    "id": "pmwgam2vm",
+    "nom": "private gold",
+    "categorie": "Parfums",
+    "prix": 6500,
+    "taille": "35ml",
+    "description": "",
+    "disponible": true,
+    "image": "images/pmwgam2vm.jpg"
   }
 ];
