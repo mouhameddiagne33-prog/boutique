@@ -88,5 +88,35 @@ window.PRODUITS = [
     "description": "",
     "disponible": true,
     "image": "images/pmwgbm382.jpg"
+  },
+  {
+    "id": "pmwgboay2",
+    "nom": "black sens",
+    "categorie": "Parfums",
+    "prix": 6000,
+    "taille": "50ml",
+    "description": "",
+    "disponible": true,
+    "image": "images/pmwgboay2.jpg"
+  },
+  {
+    "id": "pmwgbwdiu",
+    "nom": "oud pour klassik",
+    "categorie": "",
+    "prix": 27000,
+    "taille": "100ml",
+    "description": "",
+    "disponible": true,
+    "image": "images/pmwgbwdiu.jpg"
+  },
+  {
+    "id": "pmwgbxjpk",
+    "nom": "matelot",
+    "categorie": "",
+    "prix": 8000,
+    "taille": "100ml",
+    "description": "",
+    "disponible": true,
+    "image": "images/pmwgbxjpk.jpg"
   }
 ];
