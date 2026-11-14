@@ -68,5 +68,25 @@ window.PRODUITS = [
     "description": "",
     "disponible": true,
     "image": "images/pmwgam2vm.jpg"
+  },
+  {
+    "id": "pmwgbk5kr",
+    "nom": "bois intense 2004",
+    "categorie": "",
+    "prix": 16000,
+    "taille": "50ml",
+    "description": "",
+    "disponible": true,
+    "image": "images/pmwgbk5kr.jpg"
+  },
+  {
+    "id": "pmwgbm382",
+    "nom": "collection oud al malick",
+    "categorie": "Parfums",
+    "prix": 16000,
+    "taille": "50ml",
+    "description": "",
+    "disponible": true,
+    "image": "images/pmwgbm382.jpg"
   }
 ];
